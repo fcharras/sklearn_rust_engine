@@ -1,4 +1,7 @@
-use numpy::ndarray::{ArrayD,  ArrayViewD};
+use numpy::ndarray::{ArrayD,  ArrayView2,ArrayViewD, Axis};
+use std::iter::Enumerate;
+use std::ops::{Sub, Mul};
+use numpy::ndarray::ArrayBase;
 use numpy::{
     IntoPyArray,  PyArrayDyn,
     PyReadonlyArrayDyn, PyReadonlyArray2, PyReadonlyArray1, PyReadwriteArray2,
@@ -49,15 +52,36 @@ fn sklearn_rust_engine<'py>(m: &Bound<'py, PyModule>) -> PyResult<()> {
      // #[pyo3(name = "truc")]
      fn lloyd_iter_chunked_dense(
          X: PyReadonlyArray2<f64>,
-         sample_weight: PyReadonlyArray1<f64>,
          centers_old: PyReadonlyArray2<f64>,
          mut centers_new: PyReadwriteArray2<f64>,
-         mut weight_in_clusters: PyReadwriteArray1<f64>,
          mut labels: PyReadwriteArray1<i64>,
          mut center_shift: PyReadwriteArray1<f64>,
-         n_threads: i64,
          update_centers: bool
      ) -> PyResult<()> {
+
+         let X_view: ArrayView2<f64> = X.as_array();
+         let centers_view: ArrayView2<f64> = centers_old.as_array();
+
+         for (sample_idx, sample) in X_view.axis_iter(Axis(0)).enumerate() {
+             // println!("sample {sample_idx}\n============================");
+             let mut closest_center_idx = 0;
+             let mut smallest_squared_dist = f64::INFINITY;
+             for (idx, center) in centers_view.axis_iter(Axis(0)).enumerate(){
+                 let diff = sample.sub(&center);
+                 let squared = (&diff).mul(&diff);
+                 let squared_dist = squared.sum();
+                 // println!("squared dist: {}", squared_dist);
+                 if squared_dist < smallest_squared_dist {
+                     smallest_squared_dist = squared_dist;
+                     closest_center_idx = idx;
+                     // println!("closest centroid: {closest_center_idx}");
+                 }
+             }
+             (*labels.get_mut(sample_idx).unwrap()) = closest_center_idx as i64;
+             // Process each row here
+             // For example, print the row
+         }
+         // dbg!("{}", labels);
 
         let first_item = centers_new.get_mut([0,0]).unwrap();
         *first_item = 100.;
