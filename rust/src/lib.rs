@@ -1,3 +1,4 @@
+pub mod dbscan;
 pub mod euclidean_distance;
 
 use numpy::ndarray::ArrayBase;
