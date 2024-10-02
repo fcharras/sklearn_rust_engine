@@ -1,3 +1,5 @@
+pub mod euclidean_distance;
+
 use numpy::ndarray::ArrayBase;
 use numpy::ndarray::{ArrayD, ArrayView2, ArrayViewD, Axis};
 use numpy::{
